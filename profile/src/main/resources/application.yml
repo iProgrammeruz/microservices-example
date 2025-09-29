@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: "profile"
+  datasource:
+    url: jdbc:postgresql://localhost:5432/db_onebank
+    username: user_onebank
+    password: user_onebankpsw
+  jpa:
+    hibernate.ddl-auto: "update"
+    show-sql: true
+  profiles:
+    active: "dev"
+
+server:
+  port: 8083
+  url: "http://localhost:${server.port}"
+  version: "1.0"
+accounts:
+  message: "Card server message 1234"
+
+cloud:
+  openfeign:
+    circuitbreaker:
+      enabled: true
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: http://localhost:8070/eureka/

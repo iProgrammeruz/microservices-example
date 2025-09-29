@@ -1,0 +1,123 @@
+package dasturlash.uz.card.service;
+
+import dasturlash.uz.card.dto.CardCreateDTO;
+import dasturlash.uz.card.dto.CardDTO;
+import dasturlash.uz.card.entity.CardEntity;
+import dasturlash.uz.card.enums.CardStatus;
+import dasturlash.uz.card.repository.CardRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+
+
+@Service
+public class CardService {
+
+    @Autowired
+    private CardRepository cardRepository;
+
+    // CREATE CARD
+    public CardDTO createCard(CardCreateDTO createDTO) {
+        CardEntity card = new CardEntity();
+        card.setPhoneNumber(createDTO.getPhoneNumber());
+        card.setAmount(createDTO.getAmount() != null ? createDTO.getAmount() : 0L);
+        card.setHolderId(createDTO.getHolderId());
+        card.setStatus(CardStatus.ACTIVE);
+        card.setCardNumber(generateCardNumber());
+        CardEntity savedCard = cardRepository.save(card);
+        return convertToDTO(savedCard);
+    }
+
+
+    // GET CARD BY ID
+    public Optional<CardDTO> getCardById(String id) {
+        return cardRepository.findById(id)
+                .map(this::convertToDTO);
+    }
+
+
+    // GET CARD LIST
+    public List<CardDTO> getAllCards() {
+        return cardRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+
+    // GET CARDS BY HOLDER ID
+    public List<CardDTO> getCardsByOwnerId(String ownerId) {
+        return cardRepository.findByHolderId(ownerId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+
+    // GET CARDS BY PHONE NUMBER
+    public List<CardDTO> getCardsByPhoneNumber(String phoneNumber) {
+        return cardRepository.findByPhoneNumber(phoneNumber)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+
+    // UPDATE CARD
+    public Optional<CardDTO> updateCard(String id, CardCreateDTO updateDTO) {
+        return cardRepository.findById(id)
+                .map(card -> {
+                    card.setPhoneNumber(updateDTO.getPhoneNumber());
+                    card.setAmount(updateDTO.getAmount() != null ? updateDTO.getAmount() : 0L);
+                    card.setHolderId(updateDTO.getHolderId());
+                    return convertToDTO(cardRepository.save(card));
+                });
+    }
+
+
+    // UPDATE CARD STATUS
+    public Optional<CardDTO> updateCardStatus(String id, CardStatus status) {
+        return cardRepository.findById(id)
+                .map(card -> {
+                    card.setStatus(status);
+                    return convertToDTO(cardRepository.save(card));
+                });
+    }
+
+
+    // DELETE CARD
+    public boolean deleteCard(String id) {
+        if (cardRepository.existsById(id)) {
+            cardRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+
+    private CardDTO convertToDTO(CardEntity card) {
+        CardDTO dto = new CardDTO();
+        dto.setId(card.getId());
+        dto.setPhoneNumber(card.getPhoneNumber());
+        dto.setCardNumber(card.getCardNumber());
+        dto.setAmount(card.getAmount());
+        dto.setOwnerId(card.getHolderId());
+        dto.setStatus(card.getStatus());
+        return dto;
+    }
+
+
+    private String generateCardNumber() {
+        // Generate a 16-digit card number
+        String cardNumber;
+        do {
+            cardNumber = String.format("%016d", Math.abs(UUID.randomUUID().getMostSignificantBits() % 10000000000000000L));
+        } while (cardRepository.existsByCardNumber(cardNumber));
+        return cardNumber;
+    }
+}
